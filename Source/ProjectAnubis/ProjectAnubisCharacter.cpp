@@ -9,6 +9,8 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 
+constexpr float CeilingTolerance = -0.005f;
+
 //////////////////////////////////////////////////////////////////////////
 // AProjectAnubisCharacter
 
@@ -76,6 +78,60 @@ void AProjectAnubisCharacter::SetupPlayerInputComponent(class UInputComponent* P
 	PlayerInputComponent->BindAction("ResetVR", IE_Pressed, this, &AProjectAnubisCharacter::OnResetVR);
 }
 
+void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
+{
+	if (CanStartWallSlide(Impact))
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Emerald, TEXT("Move Blocked By Something Character Can Attach To!"));
+		}
+	}
+}
+
+bool AProjectAnubisCharacter::CanStartWallSlide(const FHitResult& Impact) const
+{
+	if (!GetCharacterMovement()->IsFalling())
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Not falling"));
+		}
+		return false;
+	}
+
+	if (GetCharacterMovement()->Velocity.Size2D() < MinAttachSpeed)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Too slow"));
+		}
+		return false;
+	}
+
+	if (Impact.ImpactNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() * 0.5f || Impact.ImpactNormal.Z < CeilingTolerance)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Wall is too horizontal"));
+		}
+		return false;
+	}
+
+	float DirectionAngleCos = -FVector::DotProduct(Impact.ImpactNormal, GetActorForwardVector().GetSafeNormal());
+	float MaxAllowedAngleCos = FMath::Cos(FMath::DegreesToRadians(WallAttachAngle));
+	if (DirectionAngleCos <= MaxAllowedAngleCos)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Angle too large"));
+		}
+		return false;
+	}
+
+	GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Cyan, TEXT("Wall accepted"));
+	return true;
+}
 
 void AProjectAnubisCharacter::OnResetVR()
 {
@@ -90,12 +146,12 @@ void AProjectAnubisCharacter::OnResetVR()
 
 void AProjectAnubisCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
-		Jump();
+	Jump();
 }
 
 void AProjectAnubisCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector Location)
 {
-		StopJumping();
+	StopJumping();
 }
 
 void AProjectAnubisCharacter::TurnAtRate(float Rate)
@@ -126,12 +182,12 @@ void AProjectAnubisCharacter::MoveForward(float Value)
 
 void AProjectAnubisCharacter::MoveRight(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) )
+	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-	
+
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction
