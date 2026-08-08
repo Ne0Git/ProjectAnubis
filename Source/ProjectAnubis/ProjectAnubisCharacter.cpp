@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ProjectAnubisCharacter.h"
+#include "ProjectAnubisCharacterMovementComponent.h"
 #include "HeadMountedDisplayFunctionLibrary.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -14,7 +15,8 @@ constexpr float CeilingTolerance = -0.005f;
 //////////////////////////////////////////////////////////////////////////
 // AProjectAnubisCharacter
 
-AProjectAnubisCharacter::AProjectAnubisCharacter()
+AProjectAnubisCharacter::AProjectAnubisCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UProjectAnubisCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -86,6 +88,7 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Emerald, TEXT("Move Blocked By Something Character Can Attach To!"));
 		}
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Custom, static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide));
 	}
 }
 
