@@ -20,6 +20,10 @@ class PROJECTANUBIS_API UProjectAnubisCharacterMovementComponent : public UChara
 
 public:
 	void PhysCustom(float DeltaSeconds, int32 Iterations) override;
+	void ExitWallSlide();
+
+protected:
+	void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);

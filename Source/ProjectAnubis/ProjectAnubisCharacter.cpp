@@ -64,6 +64,8 @@ void AProjectAnubisCharacter::SetupPlayerInputComponent(class UInputComponent* P
 	PlayerInputComponent->BindAxis("MoveForward", this, &AProjectAnubisCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AProjectAnubisCharacter::MoveRight);
 
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &AProjectAnubisCharacter::OnCrouchPressed);
+
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "turn" handles devices that provide an absolute delta, such as a mouse.
 	// "turnrate" is for devices that we choose to treat as a rate of change, such as an analog joystick
@@ -84,10 +86,6 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 {
 	if (CanStartWallSlide(Impact))
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Emerald, TEXT("Move Blocked By Something Character Can Attach To!"));
-		}
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Custom, static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide));
 	}
 }
@@ -96,28 +94,16 @@ bool AProjectAnubisCharacter::CanStartWallSlide(const FHitResult& Impact) const
 {
 	if (!GetCharacterMovement()->IsFalling())
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Not falling"));
-		}
 		return false;
 	}
 
 	if (GetCharacterMovement()->Velocity.Size2D() < MinAttachSpeed)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Too slow"));
-		}
 		return false;
 	}
 
 	if (Impact.ImpactNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() * 0.5f || Impact.ImpactNormal.Z < CeilingTolerance)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Wall is too horizontal"));
-		}
 		return false;
 	}
 
@@ -125,15 +111,18 @@ bool AProjectAnubisCharacter::CanStartWallSlide(const FHitResult& Impact) const
 	float MaxAllowedAngleCos = FMath::Cos(FMath::DegreesToRadians(WallAttachAngle));
 	if (DirectionAngleCos <= MaxAllowedAngleCos)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Angle too large"));
-		}
 		return false;
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Cyan, TEXT("Wall accepted"));
 	return true;
+}
+
+void AProjectAnubisCharacter::OnCrouchPressed()
+{
+	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		CharacterMovementComponent->ExitWallSlide();
+	}
 }
 
 void AProjectAnubisCharacter::OnResetVR()
