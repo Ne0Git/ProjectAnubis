@@ -10,8 +10,6 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 
-constexpr float CeilingTolerance = -0.005f;
-
 //////////////////////////////////////////////////////////////////////////
 // AProjectAnubisCharacter
 
@@ -102,7 +100,7 @@ bool AProjectAnubisCharacter::CanStartWallSlide(const FHitResult& Impact) const
 		return false;
 	}
 
-	if (Impact.ImpactNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() * 0.5f || Impact.ImpactNormal.Z < CeilingTolerance)
+	if (Impact.ImpactNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() * 0.5f || Impact.ImpactNormal.Z < -KINDA_SMALL_NUMBER)
 	{
 		return false;
 	}

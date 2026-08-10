@@ -27,4 +27,8 @@ protected:
 
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);
+
+private:
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
+	float WallSlideSpeed = 100.0f;
 };

@@ -3,8 +3,8 @@
 #include "ProjectAnubisCharacterMovementComponent.h"
 
 namespace {
-	float Counter = 0.0f;
-	float Duration = 0.0f;
+	float DebugCounter = 0.0f;
+	float DebugDuration = 0.0f;
 }
 
 void UProjectAnubisCharacterMovementComponent::PhysCustom(float DeltaSeconds, int32 Iterations)
@@ -25,7 +25,7 @@ void UProjectAnubisCharacterMovementComponent::ExitWallSlide()
 {
 	if (MovementMode == MOVE_Custom && CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide))
 	{
-		Duration = 0.0f;
+		DebugDuration = 0.0f;
 		SetMovementMode(MOVE_Falling);
 	}
 }
@@ -42,14 +42,30 @@ void UProjectAnubisCharacterMovementComponent::OnMovementModeChanged(EMovementMo
 
 void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds, int32 Iterations)
 {
-	Counter += DeltaSeconds;
-	Duration += DeltaSeconds;
-	if (Counter < 1.0f && Duration >= 0.05f) {
+	const FVector SlideVelocity = FVector(0.0f, 0.0f, -WallSlideSpeed);
+	const FVector Delta = SlideVelocity * DeltaSeconds;
+	FHitResult Hit(1.0f);
+	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+	if (Hit.bBlockingHit)
+	{
+		if (IsValidLandingSpot(UpdatedComponent->GetComponentLocation(), Hit))
+		{
+			ExitWallSlide();
+			return;
+		}
+
+		SlideAlongSurface(Delta, 1.0f - Hit.Time, Hit.ImpactNormal, Hit, true);
+	}
+
+	DebugCounter += DeltaSeconds;
+	DebugDuration += DeltaSeconds;
+	if (DebugCounter < 1.0f && DebugDuration >= 0.05f) {
 		return;
 	}
-	Counter = 0.0f;
+	DebugCounter = 0.0f;
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::White, FString::Printf(TEXT("PhysWallSlide is ticking... Duration: %f"), Duration));
+		GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::White, FString::Printf(TEXT("PhysWallSlide is ticking... Duration: %f"), DebugDuration));
 	}
 }

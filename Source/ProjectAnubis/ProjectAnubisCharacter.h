@@ -83,7 +83,4 @@ private:
 	// Minimum horizontal movement speed required to attach to a wall.
 	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
 	float MinAttachSpeed = 255.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
-	float WallSlideSpeed = 1.0f;
 };
