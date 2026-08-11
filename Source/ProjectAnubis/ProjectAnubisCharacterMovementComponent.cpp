@@ -30,6 +30,11 @@ void UProjectAnubisCharacterMovementComponent::ExitWallSlide()
 	}
 }
 
+bool UProjectAnubisCharacterMovementComponent::IsWallSlidable(const FVector& SurfaceNormal) const
+{
+	return SurfaceNormal.Z > -KINDA_SMALL_NUMBER && SurfaceNormal.Z < GetWalkableFloorZ() * 0.5f;
+}
+
 void UProjectAnubisCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
@@ -49,7 +54,7 @@ void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds,
 
 	if (Hit.bBlockingHit)
 	{
-		if (IsValidLandingSpot(UpdatedComponent->GetComponentLocation(), Hit))
+		if (!IsWallSlidable(Hit.ImpactNormal))
 		{
 			ExitWallSlide();
 			return;

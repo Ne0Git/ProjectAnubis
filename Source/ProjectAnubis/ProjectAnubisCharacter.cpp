@@ -100,9 +100,12 @@ bool AProjectAnubisCharacter::CanStartWallSlide(const FHitResult& Impact) const
 		return false;
 	}
 
-	if (Impact.ImpactNormal.Z > GetCharacterMovement()->GetWalkableFloorZ() * 0.5f || Impact.ImpactNormal.Z < -KINDA_SMALL_NUMBER)
+	if (auto Movement = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
 	{
-		return false;
+		if (!Movement->IsWallSlidable(Impact.ImpactNormal))
+		{
+			return false;
+		}
 	}
 
 	float DirectionAngleCos = -FVector::DotProduct(Impact.ImpactNormal, GetActorForwardVector().GetSafeNormal());

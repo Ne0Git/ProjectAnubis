@@ -21,6 +21,7 @@ class PROJECTANUBIS_API UProjectAnubisCharacterMovementComponent : public UChara
 public:
 	void PhysCustom(float DeltaSeconds, int32 Iterations) override;
 	void ExitWallSlide();
+	bool IsWallSlidable(const FVector& SurfaceNormal) const;
 
 protected:
 	void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
