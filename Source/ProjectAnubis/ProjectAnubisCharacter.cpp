@@ -82,43 +82,13 @@ void AProjectAnubisCharacter::SetupPlayerInputComponent(class UInputComponent* P
 
 void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 {
-	if (CanStartWallSlide(Impact))
+	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
 	{
-		if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
+		if (CharacterMovementComponent->CanStartWallSlide(Impact))
 		{
 			CharacterMovementComponent->StartWallSlide(Impact.ImpactNormal);
 		}
 	}
-}
-
-bool AProjectAnubisCharacter::CanStartWallSlide(const FHitResult& Impact) const
-{
-	if (!GetCharacterMovement()->IsFalling())
-	{
-		return false;
-	}
-
-	if (GetCharacterMovement()->Velocity.Size2D() < MinAttachSpeed)
-	{
-		return false;
-	}
-
-	if (auto Movement = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
-	{
-		if (!Movement->IsWallSlidable(Impact.ImpactNormal))
-		{
-			return false;
-		}
-	}
-
-	float DirectionAngleCos = -FVector::DotProduct(Impact.ImpactNormal, GetActorForwardVector().GetSafeNormal());
-	float MaxAllowedAngleCos = FMath::Cos(FMath::DegreesToRadians(WallAttachAngle));
-	if (DirectionAngleCos <= MaxAllowedAngleCos)
-	{
-		return false;
-	}
-
-	return true;
 }
 
 void AProjectAnubisCharacter::OnCrouchPressed()

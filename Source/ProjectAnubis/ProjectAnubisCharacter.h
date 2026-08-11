@@ -72,15 +72,5 @@ public:
 	void MoveBlockedBy(const FHitResult& Impact) override;
 
 private:
-	bool CanStartWallSlide(const FHitResult& Impact) const;
 	void OnCrouchPressed();
-
-private:
-	// Maximum angle (in degrees) between the wall surface and a vertical plane that still allows the character to attach.
-	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0", ClampMax = "90"))
-	float WallAttachAngle = 30.0f;
-
-	// Minimum horizontal movement speed required to attach to a wall.
-	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
-	float MinAttachSpeed = 255.0f;
 };

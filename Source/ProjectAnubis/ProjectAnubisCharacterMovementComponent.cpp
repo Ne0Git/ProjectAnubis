@@ -23,6 +23,33 @@ void UProjectAnubisCharacterMovementComponent::PhysCustom(float DeltaSeconds, in
 
 }
 
+bool UProjectAnubisCharacterMovementComponent::CanStartWallSlide(const FHitResult& Impact) const
+{
+	if (!IsFalling())
+	{
+		return false;
+	}
+
+	if (Velocity.Size2D() < MinAttachSpeed)
+	{
+		return false;
+	}
+
+	if (!IsWallSlidable(Impact.ImpactNormal))
+	{
+		return false;
+	}
+
+	float DirectionAngleCos = -FVector::DotProduct(Impact.ImpactNormal, CharacterOwner->GetActorForwardVector().GetSafeNormal());
+	float MaxAllowedAngleCos = FMath::Cos(FMath::DegreesToRadians(WallAttachAngle));
+	if (DirectionAngleCos <= MaxAllowedAngleCos)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void UProjectAnubisCharacterMovementComponent::StartWallSlide(const FVector& SurfaceNormal)
 {
 	WallSlideNormal = SurfaceNormal;
