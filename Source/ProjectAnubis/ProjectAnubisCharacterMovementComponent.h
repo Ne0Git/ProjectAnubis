@@ -20,11 +20,9 @@ class PROJECTANUBIS_API UProjectAnubisCharacterMovementComponent : public UChara
 
 public:
 	void PhysCustom(float DeltaSeconds, int32 Iterations) override;
+	void StartWallSlide(const FVector& SurfaceNormal);
 	void ExitWallSlide();
 	bool IsWallSlidable(const FVector& SurfaceNormal) const;
-
-protected:
-	void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);
@@ -32,4 +30,9 @@ private:
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
 	float WallSlideSpeed = 100.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
+	float WallCheckDistance = 100.0f;
+
+	FVector WallSlideNormal = FVector::ZeroVector;
 };

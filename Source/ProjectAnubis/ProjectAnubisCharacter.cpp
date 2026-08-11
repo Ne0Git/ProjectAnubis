@@ -84,7 +84,10 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 {
 	if (CanStartWallSlide(Impact))
 	{
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Custom, static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide));
+		if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
+		{
+			CharacterMovementComponent->StartWallSlide(Impact.ImpactNormal);
+		}
 	}
 }
 

@@ -1,6 +1,8 @@
 // Copyright (c) 2026 ne0. All Rights Reserved.
 
 #include "ProjectAnubisCharacterMovementComponent.h"
+#include "DrawDebugHelpers.h"
+#include "GameFramework/Character.h"
 
 namespace {
 	float DebugCounter = 0.0f;
@@ -21,6 +23,13 @@ void UProjectAnubisCharacterMovementComponent::PhysCustom(float DeltaSeconds, in
 
 }
 
+void UProjectAnubisCharacterMovementComponent::StartWallSlide(const FVector& SurfaceNormal)
+{
+	WallSlideNormal = SurfaceNormal;
+	Velocity = FVector::ZeroVector;
+	SetMovementMode(EMovementMode::MOVE_Custom, static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide));
+}
+
 void UProjectAnubisCharacterMovementComponent::ExitWallSlide()
 {
 	if (MovementMode == MOVE_Custom && CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide))
@@ -35,33 +44,38 @@ bool UProjectAnubisCharacterMovementComponent::IsWallSlidable(const FVector& Sur
 	return SurfaceNormal.Z > -KINDA_SMALL_NUMBER && SurfaceNormal.Z < GetWalkableFloorZ() * 0.5f;
 }
 
-void UProjectAnubisCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
-{
-	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
-
-	if (MovementMode == EMovementMode::MOVE_Custom && CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide))
-	{
-		Velocity = FVector::ZeroVector;
-	}
-}
-
 void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds, int32 Iterations)
 {
+	FVector Start = UpdatedComponent->GetComponentLocation();
+	FVector End = Start - WallSlideNormal * WallCheckDistance;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(CharacterOwner);
+
+	FHitResult WallHit;
+
+	if (!GetWorld()->LineTraceSingleByChannel(WallHit, Start, End, ECC_Visibility, QueryParams))
+	{
+		ExitWallSlide();
+		return;
+	}
+
 	const FVector SlideVelocity = FVector(0.0f, 0.0f, -WallSlideSpeed);
 	const FVector Delta = SlideVelocity * DeltaSeconds;
-	FHitResult Hit(1.0f);
-	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
+	FHitResult MoveHit;
+	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, MoveHit);
 
-	if (Hit.bBlockingHit)
+	if (MoveHit.bBlockingHit)
 	{
-		if (!IsWallSlidable(Hit.ImpactNormal))
+		if (!IsWallSlidable(MoveHit.ImpactNormal))
 		{
 			ExitWallSlide();
 			return;
 		}
 
-		SlideAlongSurface(Delta, 1.0f - Hit.Time, Hit.ImpactNormal, Hit, true);
+		SlideAlongSurface(Delta, 1.0f - MoveHit.Time, MoveHit.ImpactNormal, MoveHit, true);
 	}
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.0f, 0, 2.0f);
 
 	DebugCounter += DeltaSeconds;
 	DebugDuration += DeltaSeconds;
