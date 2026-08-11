@@ -27,6 +27,7 @@ void UProjectAnubisCharacterMovementComponent::StartWallSlide(const FVector& Sur
 {
 	WallSlideNormal = SurfaceNormal;
 	Velocity = FVector::ZeroVector;
+	CharacterOwner->GetController()->SetIgnoreMoveInput(true);
 	SetMovementMode(EMovementMode::MOVE_Custom, static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide));
 }
 
@@ -35,6 +36,7 @@ void UProjectAnubisCharacterMovementComponent::ExitWallSlide()
 	if (MovementMode == MOVE_Custom && CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide))
 	{
 		DebugDuration = 0.0f;
+		CharacterOwner->GetController()->SetIgnoreMoveInput(false);
 		SetMovementMode(MOVE_Falling);
 	}
 }
