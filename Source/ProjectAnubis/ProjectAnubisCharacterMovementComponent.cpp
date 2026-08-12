@@ -73,6 +73,19 @@ bool UProjectAnubisCharacterMovementComponent::IsWallSlidable(const FVector& Sur
 	return SurfaceNormal.Z > -KINDA_SMALL_NUMBER && SurfaceNormal.Z < GetWalkableFloorZ() * 0.5f;
 }
 
+bool UProjectAnubisCharacterMovementComponent::CanStartWallJump() const
+{
+	return MovementMode == MOVE_Custom && CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide);
+}
+
+void UProjectAnubisCharacterMovementComponent::StartWallJump()
+{
+	FVector WallJumpVelocity = (WallSlideNormal + FVector::UpVector).GetSafeNormal() * JumpZVelocity;
+
+	CharacterOwner->LaunchCharacter(WallJumpVelocity, true, true);
+	ExitWallSlide();
+}
+
 void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds, int32 Iterations)
 {
 	FVector Start = UpdatedComponent->GetComponentLocation();

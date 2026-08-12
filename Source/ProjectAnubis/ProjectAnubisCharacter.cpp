@@ -91,6 +91,20 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 	}
 }
 
+void AProjectAnubisCharacter::Jump()
+{
+	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		if (CharacterMovementComponent->CanStartWallJump())
+		{
+			CharacterMovementComponent->StartWallJump();
+			return;
+		}
+	}
+
+	Super::Jump();
+}
+
 void AProjectAnubisCharacter::OnCrouchPressed()
 {
 	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))

@@ -70,6 +70,7 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 	void MoveBlockedBy(const FHitResult& Impact) override;
+	void Jump() override;
 
 private:
 	void OnCrouchPressed();

@@ -26,6 +26,9 @@ public:
 	void ExitWallSlide();
 	bool IsWallSlidable(const FVector& SurfaceNormal) const;
 
+	bool CanStartWallJump() const;
+	void StartWallJump();
+
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);
 
