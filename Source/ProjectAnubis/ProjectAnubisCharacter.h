@@ -74,4 +74,6 @@ public:
 
 private:
 	void OnCrouchPressed();
+
+	bool bWallSlideLocked = false;
 };

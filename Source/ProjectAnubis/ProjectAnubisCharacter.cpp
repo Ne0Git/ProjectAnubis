@@ -84,7 +84,7 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 {
 	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
 	{
-		if (CharacterMovementComponent->CanStartWallSlide(Impact))
+		if (!bWallSlideLocked && CharacterMovementComponent->CanStartWallSlide(Impact))
 		{
 			CharacterMovementComponent->StartWallSlide(Impact.ImpactNormal);
 		}
@@ -93,6 +93,8 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 
 void AProjectAnubisCharacter::Jump()
 {
+	bWallSlideLocked = false;
+
 	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		if (CharacterMovementComponent->CanStartWallJump())
@@ -107,6 +109,8 @@ void AProjectAnubisCharacter::Jump()
 
 void AProjectAnubisCharacter::OnCrouchPressed()
 {
+	bWallSlideLocked = true;
+
 	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		CharacterMovementComponent->ExitWallSlide();
