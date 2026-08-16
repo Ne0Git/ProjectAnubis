@@ -80,9 +80,9 @@ bool UProjectAnubisCharacterMovementComponent::CanStartWallJump() const
 
 void UProjectAnubisCharacterMovementComponent::StartWallJump()
 {
-	FVector WallJumpVelocity = (WallSlideNormal + FVector::UpVector).GetSafeNormal() * JumpZVelocity;
+	Velocity = (WallSlideNormal + FVector::UpVector).GetSafeNormal() * JumpZVelocity;
 
-	CharacterOwner->LaunchCharacter(WallJumpVelocity, true, true);
+	CharacterOwner->LaunchCharacter(Velocity, true, true);
 	ExitWallSlide();
 }
 
@@ -101,8 +101,8 @@ void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds,
 		return;
 	}
 
-	const FVector SlideVelocity = FVector(0.0f, 0.0f, -WallSlideSpeed);
-	const FVector Delta = SlideVelocity * DeltaSeconds;
+	Velocity = FVector(0.0f, 0.0f, -WallSlideSpeed);
+	const FVector Delta = Velocity * DeltaSeconds;
 	FHitResult MoveHit;
 	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, MoveHit);
 
@@ -118,6 +118,16 @@ void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds,
 	}
 
 	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.0f, 0, 2.0f);
+	DrawDebugCapsule(
+		GetWorld(),
+		UpdatedComponent->GetComponentLocation(),
+		CharacterOwner->GetSimpleCollisionHalfHeight(),
+		CharacterOwner->GetSimpleCollisionRadius(),
+		UpdatedComponent->GetComponentQuat(),
+		FColor::Yellow,
+		false,
+		0.0f
+	);
 
 	DebugCounter += DeltaSeconds;
 	DebugDuration += DeltaSeconds;
