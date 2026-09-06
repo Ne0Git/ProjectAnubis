@@ -71,9 +71,17 @@ public:
 
 	void MoveBlockedBy(const FHitResult& Impact) override;
 	void Jump() override;
+	void Tick(float DeltaSeconds) override;
+
+	float GetForwardAxisValue() const;
+	float GetRightAxisValue() const;
 
 private:
 	void OnCrouchPressed();
 
+private:
 	bool bWallSlideLocked = false;
+
+	float ForwardAxis = 0.0f;
+	float RightAxis = 0.0f;
 };

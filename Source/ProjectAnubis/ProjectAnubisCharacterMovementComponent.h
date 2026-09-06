@@ -10,7 +10,16 @@ UENUM(BlueprintType)
 enum class EProjectAnubisCustomMovementMode : uint8
 {
 	None = 0,
-	WallSlide
+	WallSlide,
+	WallRun
+};
+
+UENUM(BlueprintType)
+enum class EWallSide : uint8
+{
+	None = 0,
+	Left,
+	Right
 };
 
 UCLASS()
@@ -29,8 +38,17 @@ public:
 	bool CanStartWallJump() const;
 	void StartWallJump();
 
+	bool CanStartWallRun(const FHitResult& Impact) const;
+	void StartWallRun(const FVector& SurfaceNormal);
+	void ExitWallRun();
+	bool IsWallRunable(const FVector& SurfaceNormal) const;
+
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);
+	void PhysWallRun(float DeltaSeconds, int32 Iterations);
+
+	EWallSide GetWallSide(const FVector& SurfaceNormal) const;
+	bool IsWallRunInputPresent(EWallSide Side) const;
 
 private:
 	// Maximum angle (in degrees) between the wall surface and a vertical plane that still allows the character to attach.
@@ -47,5 +65,5 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
 	float WallCheckDistance = 100.0f;
 
-	FVector WallSlideNormal = FVector::ZeroVector;
+	FVector WallNormal = FVector::ZeroVector;
 };

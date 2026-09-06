@@ -9,6 +9,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "DrawDebugHelpers.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AProjectAnubisCharacter
@@ -84,6 +85,12 @@ void AProjectAnubisCharacter::MoveBlockedBy(const FHitResult& Impact)
 {
 	if (auto CharacterMovementComponent = Cast<UProjectAnubisCharacterMovementComponent>(GetCharacterMovement()))
 	{
+		if (CharacterMovementComponent->CanStartWallRun(Impact))
+		{
+			CharacterMovementComponent->StartWallRun(Impact.ImpactNormal);
+			return;
+		}
+
 		if (!bWallSlideLocked && CharacterMovementComponent->CanStartWallSlide(Impact))
 		{
 			CharacterMovementComponent->StartWallSlide(Impact.ImpactNormal);
@@ -107,6 +114,32 @@ void AProjectAnubisCharacter::Jump()
 	Super::Jump();
 }
 
+void AProjectAnubisCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	FVector Start = GetActorLocation();
+
+	FVector FVEnd = Start + GetActorForwardVector() * 100.0f;
+	DrawDebugLine(GetWorld(), Start, FVEnd, FColor::Blue, false, 0.0f, 0, 2.0f);
+
+	FVector RVEnd = Start + GetActorRightVector() * 100.0f;
+	DrawDebugLine(GetWorld(), Start, RVEnd, FColor::Red, false, 0.0f, 0, 2.0f);
+
+	float VelocityScale = GetCharacterMovement()->Velocity.Size() / GetCharacterMovement()->GetMaxSpeed();
+	FVector VEnd = Start + GetCharacterMovement()->Velocity.GetSafeNormal() * 100.0f * VelocityScale;
+	DrawDebugLine(GetWorld(), Start, VEnd, FColor::Yellow, false, 0.0f, 0, 2.0f);
+
+	float VelocityScale2 = GetCharacterMovement()->Velocity.Size2D() / GetCharacterMovement()->GetMaxSpeed();
+	FVector VEnd2 = Start + GetCharacterMovement()->Velocity.GetSafeNormal2D() * 100.0f * VelocityScale2;
+	DrawDebugLine(GetWorld(), Start, VEnd2, FColor::Orange, false, 0.0f, 0, 2.0f);
+
+	bool bMovingOncamera = FVector::DotProduct(FollowCamera->GetForwardVector(), GetActorForwardVector()) < 0;
+	FString msg = bMovingOncamera ? "Moving on camera!" : "Moving away of camera!";
+	FColor color = bMovingOncamera ? FColor::Green : FColor::Blue;
+	GEngine->AddOnScreenDebugMessage(2, 1.0, color, msg);
+}
+
 void AProjectAnubisCharacter::OnCrouchPressed()
 {
 	bWallSlideLocked = true;
@@ -115,6 +148,16 @@ void AProjectAnubisCharacter::OnCrouchPressed()
 	{
 		CharacterMovementComponent->ExitWallSlide();
 	}
+}
+
+float AProjectAnubisCharacter::GetForwardAxisValue() const
+{
+	return ForwardAxis;
+}
+
+float AProjectAnubisCharacter::GetRightAxisValue() const
+{
+	return RightAxis;
 }
 
 void AProjectAnubisCharacter::OnResetVR()
@@ -152,6 +195,8 @@ void AProjectAnubisCharacter::LookUpAtRate(float Rate)
 
 void AProjectAnubisCharacter::MoveForward(float Value)
 {
+	ForwardAxis = Value;
+
 	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is forward
@@ -166,6 +211,8 @@ void AProjectAnubisCharacter::MoveForward(float Value)
 
 void AProjectAnubisCharacter::MoveRight(float Value)
 {
+	RightAxis = Value;
+
 	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is right
