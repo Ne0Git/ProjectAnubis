@@ -43,6 +43,8 @@ public:
 	void ExitWallRun();
 	bool IsWallRunable(const FVector& SurfaceNormal) const;
 
+	void BeginPlay() override;
+
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);
 	void PhysWallRun(float DeltaSeconds, int32 Iterations);
@@ -65,5 +67,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0"))
 	float WallCheckDistance = 100.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Run", meta = (ClampMin = "0"))
+	float MinWallSideFactor = 0.6f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Run", meta = (ClampMin = "0"))
+	float MinWallNormalFactor = 0.7f;
+
 	FVector WallNormal = FVector::ZeroVector;
+
+	const class AProjectAnubisCharacter* ProjectAnubisCharacter = nullptr;
 };

@@ -45,8 +45,8 @@ bool UProjectAnubisCharacterMovementComponent::CanStartWallSlide(const FHitResul
 		return false;
 	}
 
-	float DirectionAngleCos = -FVector::DotProduct(Impact.ImpactNormal, CharacterOwner->GetActorForwardVector().GetSafeNormal());
-	float MaxAllowedAngleCos = FMath::Cos(FMath::DegreesToRadians(WallAttachAngle));
+	const float DirectionAngleCos = -FVector::DotProduct(Impact.ImpactNormal, CharacterOwner->GetActorForwardVector().GetSafeNormal());
+	const float MaxAllowedAngleCos = FMath::Cos(FMath::DegreesToRadians(WallAttachAngle));
 	if (DirectionAngleCos <= MaxAllowedAngleCos)
 	{
 		return false;
@@ -108,6 +108,14 @@ bool UProjectAnubisCharacterMovementComponent::CanStartWallRun(const FHitResult&
 		return false;
 	}
 
+	const FVector CameraRight = ProjectAnubisCharacter->GetFollowCamera()->GetRightVector();
+	const float WallSideFactor = FMath::Abs(FVector::DotProduct(Impact.ImpactNormal, CameraRight));
+
+	if (WallSideFactor < MinWallSideFactor)
+	{
+		return false;
+	}
+
 	return IsWallRunInputPresent(GetWallSide(Impact.ImpactNormal));
 }
 
@@ -131,10 +139,18 @@ bool UProjectAnubisCharacterMovementComponent::IsWallRunable(const FVector& Surf
 	return SurfaceNormal.Z > -KINDA_SMALL_NUMBER && SurfaceNormal.Z < GetWalkableFloorZ();
 }
 
+void UProjectAnubisCharacterMovementComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	ProjectAnubisCharacter = Cast<AProjectAnubisCharacter>(CharacterOwner);
+	check(ProjectAnubisCharacter);
+}
+
 void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds, int32 Iterations)
 {
-	FVector Start = UpdatedComponent->GetComponentLocation();
-	FVector End = Start - WallNormal * WallCheckDistance;
+	const FVector Start = UpdatedComponent->GetComponentLocation();
+	const FVector End = Start - WallNormal * WallCheckDistance;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(CharacterOwner);
 
@@ -188,14 +204,61 @@ void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds,
 
 void UProjectAnubisCharacterMovementComponent::PhysWallRun(float DeltaSeconds, int32 Iterations)
 {
-	if (!IsWallRunInputPresent(GetWallSide(WallNormal)))
+	const FVector Start = UpdatedComponent->GetComponentLocation();
+	const FVector End = Start - WallNormal * WallCheckDistance;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(CharacterOwner);
+
+	FHitResult WallHit;
+
+	if (!GetWorld()->LineTraceSingleByChannel(WallHit, Start, End, ECC_Visibility, QueryParams))
 	{
+		GEngine->AddOnScreenDebugMessage(4, 1.0, FColor::Red, TEXT("Exiting by LineTrace fail"));
 		ExitWallRun();
 		return;
 	}
 
-	FVector Start = UpdatedComponent->GetComponentLocation();
-	FVector End = Start - WallNormal * WallCheckDistance;
+	WallNormal = WallHit.ImpactNormal;
+
+	const FVector CameraRight = ProjectAnubisCharacter->GetFollowCamera()->GetRightVector();
+	const float WallSideFactor = FMath::Abs(FVector::DotProduct(WallNormal, CameraRight));
+
+	if (WallSideFactor < MinWallSideFactor)
+	{
+		GEngine->AddOnScreenDebugMessage(4, 1.0, FColor::Red, TEXT("Exiting by WallSideFactor fail"));
+		ExitWallRun();
+		return;
+	}
+
+	if (!IsWallRunInputPresent(GetWallSide(WallNormal)))
+	{
+		GEngine->AddOnScreenDebugMessage(4, 1.0, FColor::Red, TEXT("Exiting by InputPresent fail"));
+		ExitWallRun();
+		return;
+	}
+
+	const float DirectionSign = -FVector::DotProduct(CharacterOwner->GetActorRightVector(), WallNormal);
+	const FVector WallRunDirection = (FVector::CrossProduct(FVector::UpVector, WallNormal) * DirectionSign).GetSafeNormal();
+
+	Velocity = WallRunDirection * GetMaxSpeed();
+	const FVector Delta = Velocity * DeltaSeconds;
+	FHitResult MoveHit;
+	SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, MoveHit);
+
+	if (MoveHit.bBlockingHit)
+	{
+		const float WallNormalFactor = FVector::DotProduct(WallNormal, MoveHit.ImpactNormal);
+
+		if (WallNormalFactor < MinWallNormalFactor)
+		{
+			GEngine->AddOnScreenDebugMessage(4, 1.0, FColor::Red, TEXT("Exiting by WallNormalFactor in Blocking Hit"));
+			ExitWallRun();
+			return;
+		}
+
+		WallNormal = MoveHit.ImpactNormal;
+	}
+
 	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 0.0f, 0, 2.0f);
 	DrawDebugCapsule(
 		GetWorld(),
@@ -208,10 +271,10 @@ void UProjectAnubisCharacterMovementComponent::PhysWallRun(float DeltaSeconds, i
 		0.0f
 	);
 
-	FVector PEnd = Start + FVector::CrossProduct(FVector::UpVector, WallNormal).GetSafeNormal() * WallCheckDistance;
+	const FVector PEnd = Start + WallRunDirection * WallCheckDistance;
 	DrawDebugLine(GetWorld(), Start, PEnd, FColor::Cyan, false, 0.0f, 0, 2.0f);
 
-	FVector NEnd = Start + FVector::CrossProduct(WallNormal, FVector::UpVector).GetSafeNormal() * WallCheckDistance;
+	const FVector NEnd = Start - WallRunDirection * WallCheckDistance;
 	DrawDebugLine(GetWorld(), Start, NEnd, FColor::Emerald, false, 0.0f, 0, 2.0f);
 
 	DebugCounter += DeltaSeconds;
@@ -228,18 +291,17 @@ void UProjectAnubisCharacterMovementComponent::PhysWallRun(float DeltaSeconds, i
 
 EWallSide UProjectAnubisCharacterMovementComponent::GetWallSide(const FVector& SurfaceNormal) const
 {
-	auto PACharacter = Cast<AProjectAnubisCharacter>(CharacterOwner);
-	if (!PACharacter)
-	{
-		return EWallSide::None;
-	}
-
-	if (FVector::DotProduct(SurfaceNormal, PACharacter->GetFollowCamera()->GetRightVector()) > 0)
+	if (FVector::DotProduct(SurfaceNormal, ProjectAnubisCharacter->GetFollowCamera()->GetRightVector()) > KINDA_SMALL_NUMBER)
 	{
 		return EWallSide::Left;
 	}
 
-	return EWallSide::Right;
+	if (FVector::DotProduct(SurfaceNormal, ProjectAnubisCharacter->GetFollowCamera()->GetRightVector()) < -KINDA_SMALL_NUMBER)
+	{
+		return EWallSide::Right;
+	}
+
+	return EWallSide::None;
 }
 
 bool UProjectAnubisCharacterMovementComponent::IsWallRunInputPresent(EWallSide Side) const
@@ -248,32 +310,23 @@ bool UProjectAnubisCharacterMovementComponent::IsWallRunInputPresent(EWallSide S
 	{
 		if (Side == EWallSide::Right)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Cyan, TEXT("Wall is on Right"));
+			GEngine->AddOnScreenDebugMessage(1, 1.0, FColor::Cyan, TEXT("Wall is on Right"));
 		}
 		else if (Side == EWallSide::Left)
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Magenta, TEXT("Wall is on Left"));
+			GEngine->AddOnScreenDebugMessage(1, 1.0, FColor::Magenta, TEXT("Wall is on Left"));
 		}
 	}
 
-	auto PACharacter = Cast<AProjectAnubisCharacter>(CharacterOwner);
-	if (!PACharacter)
-	{
-		return false;
-	}
-
-	float ForwardAxis = PACharacter->GetForwardAxisValue();
+	const float ForwardAxis = ProjectAnubisCharacter->GetForwardAxisValue();
 
 	if (ForwardAxis < 0.1f && ForwardAxis > -0.1f)
 	{
 		return false;
 	}
 
-	float RightAxis = PACharacter->GetRightAxisValue();
-	GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Turquoise, FString::Printf(TEXT("RightAxis sign is: %f"), FMath::Sign(RightAxis)));
-	float MovingOncameraFactor = FVector::DotProduct(PACharacter->GetFollowCamera()->GetForwardVector(), PACharacter->GetActorForwardVector());
-	GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Turquoise, FString::Printf(TEXT("MovingOnCameraFactor sign is: %f"), FMath::Sign(MovingOncameraFactor)));
-
+	const float RightAxis = ProjectAnubisCharacter->GetRightAxisValue();
+	
 	if (Side == EWallSide::Right && RightAxis < 0.1f)
 	{
 		return false;
