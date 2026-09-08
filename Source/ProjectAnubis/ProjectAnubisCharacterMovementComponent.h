@@ -52,6 +52,8 @@ private:
 	EWallSide GetWallSide(const FVector& SurfaceNormal) const;
 	bool IsWallRunInputPresent(EWallSide Side) const;
 
+	const FVector GetWallRunDirection() const;
+
 private:
 	// Maximum angle (in degrees) between the wall surface and a vertical plane that still allows the character to attach.
 	UPROPERTY(EditDefaultsOnly, Category = "Movement|Wall Slide", meta = (ClampMin = "0", ClampMax = "90"))

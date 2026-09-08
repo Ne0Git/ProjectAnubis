@@ -80,15 +80,31 @@ bool UProjectAnubisCharacterMovementComponent::IsWallSlidable(const FVector& Sur
 
 bool UProjectAnubisCharacterMovementComponent::CanStartWallJump() const
 {
-	return MovementMode == MOVE_Custom && CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide);
+	return MovementMode == MOVE_Custom
+		&& (CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallSlide)
+		|| CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallRun));
 }
 
 void UProjectAnubisCharacterMovementComponent::StartWallJump()
 {
 	Velocity = (WallNormal + FVector::UpVector).GetSafeNormal() * JumpZVelocity;
 
+	const bool bIsWallRunning = CustomMovementMode == static_cast<uint8>(EProjectAnubisCustomMovementMode::WallRun);
+	if (bIsWallRunning)
+	{
+		Velocity += GetWallRunDirection() * JumpZVelocity;
+	}
+
 	CharacterOwner->LaunchCharacter(Velocity, true, true);
-	ExitWallSlide();
+
+	if (bIsWallRunning)
+	{
+		ExitWallRun();
+	}
+	else
+	{
+		ExitWallSlide();
+	}
 }
 
 bool UProjectAnubisCharacterMovementComponent::CanStartWallRun(const FHitResult& Impact) const
@@ -237,8 +253,7 @@ void UProjectAnubisCharacterMovementComponent::PhysWallRun(float DeltaSeconds, i
 		return;
 	}
 
-	const float DirectionSign = -FVector::DotProduct(CharacterOwner->GetActorRightVector(), WallNormal);
-	const FVector WallRunDirection = (FVector::CrossProduct(FVector::UpVector, WallNormal) * DirectionSign).GetSafeNormal();
+	const FVector WallRunDirection = GetWallRunDirection();
 
 	Velocity = WallRunDirection * GetMaxSpeed();
 	const FVector Delta = Velocity * DeltaSeconds;
@@ -338,4 +353,10 @@ bool UProjectAnubisCharacterMovementComponent::IsWallRunInputPresent(EWallSide S
 	}
 
 	return true;
+}
+
+const FVector UProjectAnubisCharacterMovementComponent::GetWallRunDirection() const
+{
+	const float DirectionSign = -FVector::DotProduct(CharacterOwner->GetActorRightVector(), WallNormal);
+	return (FVector::CrossProduct(FVector::UpVector, WallNormal) * DirectionSign).GetSafeNormal();
 }
