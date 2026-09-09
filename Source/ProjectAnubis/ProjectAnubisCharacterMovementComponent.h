@@ -45,6 +45,11 @@ public:
 
 	void BeginPlay() override;
 
+	// Returns the wall side multiplier: -1 if the wall is to the character's left, 1 if to the right.
+	// Used for calculating movement direction along the wall and selecting animations.
+	UFUNCTION(BlueprintCallable, Category = "Movement|Wall Run")
+	float DirectionSign() const;
+
 private:
 	void PhysWallSlide(float DeltaSeconds, int32 Iterations);
 	void PhysWallRun(float DeltaSeconds, int32 Iterations);
@@ -52,7 +57,7 @@ private:
 	EWallSide GetWallSide(const FVector& SurfaceNormal) const;
 	bool IsWallRunInputPresent(EWallSide Side) const;
 
-	const FVector GetWallRunDirection() const;
+	FVector GetWallRunDirection() const;
 
 private:
 	// Maximum angle (in degrees) between the wall surface and a vertical plane that still allows the character to attach.

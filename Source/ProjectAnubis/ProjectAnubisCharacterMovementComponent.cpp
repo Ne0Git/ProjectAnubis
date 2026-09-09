@@ -163,6 +163,11 @@ void UProjectAnubisCharacterMovementComponent::BeginPlay()
 	check(ProjectAnubisCharacter);
 }
 
+float UProjectAnubisCharacterMovementComponent::DirectionSign() const
+{
+	return -FMath::Sign(FVector::DotProduct(CharacterOwner->GetActorRightVector(), WallNormal));
+}
+
 void UProjectAnubisCharacterMovementComponent::PhysWallSlide(float DeltaSeconds, int32 Iterations)
 {
 	const FVector Start = UpdatedComponent->GetComponentLocation();
@@ -355,8 +360,7 @@ bool UProjectAnubisCharacterMovementComponent::IsWallRunInputPresent(EWallSide S
 	return true;
 }
 
-const FVector UProjectAnubisCharacterMovementComponent::GetWallRunDirection() const
+FVector UProjectAnubisCharacterMovementComponent::GetWallRunDirection() const
 {
-	const float DirectionSign = -FVector::DotProduct(CharacterOwner->GetActorRightVector(), WallNormal);
-	return (FVector::CrossProduct(FVector::UpVector, WallNormal) * DirectionSign).GetSafeNormal();
+	return (FVector::CrossProduct(FVector::UpVector, WallNormal) * DirectionSign()).GetSafeNormal();
 }
